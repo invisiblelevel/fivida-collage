@@ -72,7 +72,7 @@ npm run tauri dev
 npm run tauri build
 The installer will appear in src-tauri/target/release/bundle/nsis/.
 
-License
+```License
 MIT — see LICENSE.
 
 Author
