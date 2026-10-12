@@ -45,7 +45,7 @@
       "nsis": {
         "languages": ["English", "Russian", "SimpChinese"],
         "displayLanguageSelector": true,
-        "installMode": "currentUser"
+        "installMode": "perMachine"
       }
     }
   }
