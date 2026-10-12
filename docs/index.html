@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fivida Collage — Offline Photo Collage Maker</title>
+    <meta name="description" content="Lightweight offline desktop app for building photo collages. 34 layouts, 7 figures, rotation, borders, shadows. Export PNG/JPEG/WebP.">
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="Fivida Collage">
+    <meta property="og:description" content="Offline photo collage maker for Windows.">
+    <meta property="og:image" content="https://invisiblelevel.github.io/fivida-collage/social-preview.png">
+    <meta property="og:url" content="https://invisiblelevel.github.io/fivida-collage/">
+    <meta property="og:type" content="website">
+
+    <style>
+        :root {
+            --bg: #0f0f13;
+            --surface: #16161c;
+            --elevated: #1e1e26;
+            --border: #26262f;
+            --text: #f0f0f5;
+            --text-muted: #a8a8b8;
+            --accent: #a020f0;
+            --accent-hover: #b53dff;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+        /* NAV */
+        nav {
+            position: fixed; top: 0; width: 100%;
+            background: rgba(15, 15, 19, 0.9);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+        }
+        nav .container {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 16px 24px;
+        }
+        .logo { font-size: 18px; font-weight: 700; color: var(--text); text-decoration: none; }
+        .logo span { color: var(--accent); }
+        .nav-links { display: flex; gap: 24px; align-items: center; }
+        .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 14px; font-weight: 500; }
+        .nav-links a:hover { color: var(--text); }
+        .nav-cta {
+            background: var(--accent); color: white !important;
+            padding: 8px 18px; border-radius: 8px; font-weight: 600;
+        }
+        .nav-cta:hover { background: var(--accent-hover); }
+
+        /* HERO */
+        header {
+            padding: 160px 0 100px;
+            text-align: center;
+            background: radial-gradient(ellipse at top, rgba(160, 32, 240, 0.15), transparent 60%);
+        }
+        h1 {
+            font-size: 56px; font-weight: 800; letter-spacing: -1px;
+            margin-bottom: 20px; line-height: 1.1;
+        }
+        h1 span { color: var(--accent); }
+        .tagline { font-size: 20px; color: var(--text-muted); max-width: 600px; margin: 0 auto 32px; }
+        .hero-buttons { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+        .btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 14px 28px; border-radius: 10px; font-size: 15px;
+            font-weight: 600; text-decoration: none; transition: all 0.2s;
+        }
+        .btn-primary { background: var(--accent); color: white; box-shadow: 0 4px 20px rgba(160, 32, 240, 0.4); }
+        .btn-primary:hover { background: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 8px 28px rgba(160, 32, 240, 0.5); }
+        .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+        .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* FEATURES */
+        section { padding: 80px 0; }
+        h2 { font-size: 36px; font-weight: 700; text-align: center; margin-bottom: 16px; letter-spacing: -0.5px; }
+        .section-sub { text-align: center; color: var(--text-muted); margin-bottom: 56px; font-size: 16px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 28px 24px;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+        .card:hover { border-color: var(--accent); transform: translateY(-3px); }
+        .card-icon { font-size: 28px; margin-bottom: 14px; }
+        .card h3 { font-size: 18px; font-weight: 600; margin-bottom: 10px; }
+        .card p { color: var(--text-muted); font-size: 14px; line-height: 1.6; }
+
+        /* CTA */
+        .cta-section {
+            text-align: center;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 64px 32px;
+            margin: 40px 24px;
+        }
+        .cta-section h2 { margin-bottom: 12px; }
+        .cta-section p { color: var(--text-muted); margin-bottom: 32px; font-size: 16px; }
+
+        /* FOOTER */
+        footer {
+            text-align: center; padding: 48px 24px;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted); font-size: 14px;
+        }
+        footer a { color: var(--accent); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 36px; }
+            .nav-links { display: none; }
+            header { padding: 120px 0 60px; }
+        }
+    </style>
+</head>
+<body>
+
+<nav>
+    <div class="container">
+        <a href="#" class="logo">Fivida<span>Collage</span></a>
+        <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#download" class="nav-cta">Download</a>
+        </div>
+    </div>
+</nav>
+
+<header>
+    <div class="container">
+        <h1>Build collages <span>in one click</span></h1>
+        <p class="tagline">
+            Lightweight offline desktop app for Windows. 34 layouts, 7 figures, free rotation, borders and shadows.
+        </p>
+        <div class="hero-buttons">
+            <a href="https://github.com/invisiblelevel/fivida-collage/releases/latest" class="btn btn-primary" id="download">
+                ⬇ Download for Windows
+            </a>
+            <a href="https://github.com/invisiblelevel/fivida-collage" class="btn btn-secondary">
+                View on GitHub
+            </a>
+        </div>
+    </div>
+</header>
+
+<section id="features">
+    <div class="container">
+        <h2>What's inside</h2>
+        <p class="section-sub">Everything you need to make quick, good-looking collages.</p>
+        <div class="grid">
+            <div class="card">
+                <div class="card-icon">🎨</div>
+                <h3>34 Layouts</h3>
+                <p>15 regular grids and ~19 irregular layouts — Journal, Mosaic, Film strip, Polaroid, Pyramid and more.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon">🔷</div>
+                <h3>7 Figures</h3>
+                <p>Circle, Ellipse, Pyramid, Hexagon, Honeycomb, Diamonds, Stars. Each with adjustable size and count.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon">🔄</div>
+                <h3>Free Rotation</h3>
+                <p>Grab the handle and turn any photo to any angle. Auto-scaling keeps corners filled — no empty gaps.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon">✋</div>
+                <h3>Drag &amp; Drop</h3>
+                <p>Swap photos between cells directly on the canvas. Replace or remove any photo with a single click.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon">🖼️</div>
+                <h3>Borders &amp; Shadows</h3>
+                <p>Thickness, color, corner radius, shadow intensity. Custom HSV picker for background and border colors.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon">💾</div>
+                <h3>Export Anywhere</h3>
+                <p>PNG, JPEG, or WebP. Resolution up to 4096&times;4096. Everything runs on your machine.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon">🌍</div>
+                <h3>Three Languages</h3>
+                <p>English, Русский, 中文. Auto-detects your system language on first launch.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon">🔒</div>
+                <h3>Fully Offline</h3>
+                <p>No clouds, no subscriptions, no data collection. Installer bundles WebView2 — works without internet.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="cta-section" id="download">
+    <div class="container">
+        <h2>Ready to build your collage?</h2>
+        <p>Windows 10 (1903+) / Windows 11 (64-bit). Free and open source.</p>
+        <div class="hero-buttons">
+            <a href="https://github.com/invisiblelevel/fivida-collage/releases/latest" class="btn btn-primary">
+                ⬇ Download v1.0.0
+            </a>
+        </div>
+    </div>
+</div>
+
+<footer>
+    <div class="container">
+        <p>
+            Made by <a href="https://github.com/invisiblelevel">INV.LVL</a> · 2026 · 
+            <a href="https://github.com/invisiblelevel/fivida-collage/blob/main/LICENSE">MIT License</a>
+        </p>
+    </div>
+</footer>
+
+</body>
+</html>
