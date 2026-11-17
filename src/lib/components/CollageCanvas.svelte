@@ -5,7 +5,7 @@
   import { getAppState } from '$lib/state/appState.svelte.js';
   import { t } from '$lib/i18n/index.js';
   import type { SelectedImage, Cell, ImageFit } from '$lib/state/appState.svelte.js';
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { getCurrentWebview } from '@tauri-apps/api/webview';
   import { Plus, Trash2, Download, Shuffle, ImagePlus, Undo2, Redo2 } from '@lucide/svelte';
 
@@ -18,9 +18,11 @@
   let exporting = $state(false);
   let error = $state('');
 
-  let loadedImages: HTMLImageElement[] = [];
+  let loadedImages: (HTMLImageElement | null)[] = [];
   let imagesVersion = $state(0);
-  let loadedForKey = '';
+  // Кэш декодированных картинок по самому объекту File (а не по имени!)
+  const imageCache = new WeakMap<File, HTMLImageElement | null>();
+  let loadSeq = 0;
 
   let loadedBgImage: HTMLImageElement | null = null;
   let loadedBgForKey = '';
@@ -28,6 +30,7 @@
   // --- ДОБАВИТЬ ВОТ ЭТО ---
   let cachedPatternCanvas: HTMLCanvasElement | null = null;
   let cachedPatternKey = '';
+  let patternLoadingKey = '';
   // ------------------------
   
   type CellRect = { x: number; y: number; w: number; h: number; shape?: 'rect' | 'circle' | 'ellipse' | 'hexagon' | 'diamond' | 'star' };
@@ -169,44 +172,31 @@
     });
   }
 
-  let loadingKey = '';
-
+  // Синхронизирует loadedImages с app.collageImages (порядок, удаление, undo и т.д.).
+  // Если все картинки уже в кэше — отрабатывает синхронно, без await.
   async function loadAllImages() {
+    const seq = ++loadSeq;
     const files = app.collageImages.map((i) => i.file);
-    const key = files.map((f) => f.name).join('|') + '::' + files.length;
+    const missing = [...new Set(files.filter((f) => !imageCache.has(f)))];
 
-    if (key === loadedForKey && loadedImages.length === files.length) {
-      return;
-    }
-    if (key === loadingKey) {
-      return;
-    }
-
-    loadingKey = key;
-    try {
-      const results = await Promise.allSettled(files.map(loadImageFromFile));
-      const loaded: HTMLImageElement[] = [];
+    if (missing.length > 0) {
       let failedCount = 0;
-      
-      for (const r of results) {
-        if (r.status === 'fulfilled') {
-          loaded.push(r.value);
-        } else {
-          failedCount++;
-          loaded.push(null as unknown as HTMLImageElement); // дырка
-        }
-      }
-      
-      if (failedCount > 0) {
-        error = tr('errors.loadFailed', { n: failedCount });
-      }
-      
-      loadedImages = loaded;
-      loadedForKey = key;
-      imagesVersion++;
-    } finally {
-      loadingKey = '';
+      await Promise.all(
+        missing.map(async (f) => {
+          try {
+            imageCache.set(f, await loadImageFromFile(f));
+          } catch {
+            imageCache.set(f, null);
+            failedCount++;
+          }
+        })
+      );
+      if (failedCount > 0) error = tr('errors.loadFailed', { n: failedCount });
+      if (seq !== loadSeq) return; // пока грузили, список снова изменился
     }
+
+    loadedImages = files.map((f) => imageCache.get(f) ?? null);
+    imagesVersion++;
   }
 
   async function loadBackgroundImage() {
@@ -309,6 +299,8 @@
       
       if (key !== cachedPatternKey) {
         // Пересоздаём паттерн, если изменились настройки
+        if (patternLoadingKey === key) return;
+        patternLoadingKey = key;
         import('$lib/patterns/patterns.js').then(({ getPatternSVG }) => {
           const svgString = getPatternSVG(bg.pattern, bg.patternColor);
           const blob = new Blob([svgString], { type: 'image/svg+xml' });
@@ -327,10 +319,15 @@
             
             cachedPatternCanvas = canvas;
             cachedPatternKey = key;
+            patternLoadingKey = '';
             URL.revokeObjectURL(url);
             
             // Перерисовываем коллаж с новым паттерном
             scheduleRender();
+          };
+          img.onerror = () => {
+            patternLoadingKey = '';
+            URL.revokeObjectURL(url);
           };
           img.src = url;
         });
@@ -750,7 +747,7 @@
   function clearAll() {
     app.clearCollageImages();
     loadedImages = [];
-    loadedForKey = '';
+    imagesVersion++;
     error = '';
     dragFrom = null;
     dragTo = null;
@@ -916,9 +913,16 @@
     e.stopPropagation();
     e.preventDefault();
     app.setRotation(i, 0);
+    app.pushHistory();
   }
 
   // ---------- Реактивность ----------
+
+  // Любое изменение списка/порядка картинок (swap, shuffle, remove, undo/redo...)
+  $effect(() => {
+    app.collageImages;
+    untrack(() => { loadAllImages(); });
+  });
 
   $effect(() => {
     app.collage.columns;

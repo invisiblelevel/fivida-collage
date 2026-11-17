@@ -57,6 +57,7 @@ export interface CollageSettings {
 interface HistorySnapshot {
   collage: CollageSettings;
   rotations: number[];
+  images: SelectedImage[];
 }
 
 export class AppState {
@@ -115,7 +116,8 @@ export class AppState {
     }
     const snapshot: HistorySnapshot = {
       collage: JSON.parse(JSON.stringify(this.collage)),
-      rotations: [...this.collageRotations]
+      rotations: [...this.collageRotations],
+      images: [...this.collageImages]
     };
     this.history.push(snapshot);
     if (this.history.length > this.maxHistory) {
@@ -143,6 +145,8 @@ export class AppState {
     if (!snap) return;
     this.collage = JSON.parse(JSON.stringify(snap.collage));
     this.collageRotations = [...snap.rotations];
+    this.collageImages = [...snap.images];
+    this.collageHoveredIndex = null;
   }
 
   setSection(s: CollageSection) { this.activeSection = s; }
@@ -178,8 +182,7 @@ export class AppState {
   }
 
   removeCollageImage(index: number) {
-    const img = this.collageImages[index];
-    if (img?.thumbUrl) URL.revokeObjectURL(img.thumbUrl);
+    // thumbUrl не отзываем: картинка может вернуться через Undo
     this.collageImages = this.collageImages.filter((_, i) => i !== index);
     this.collageRotations = this.collageRotations.filter((_, i) => i !== index);
     if (this.collageHoveredIndex === index) this.collageHoveredIndex = null;
@@ -188,9 +191,6 @@ export class AppState {
 
   replaceCollageImage(index: number, newImage: SelectedImage) {
     if (index < 0 || index >= this.collageImages.length) return;
-    const old = this.collageImages[index];
-    if (old?.thumbUrl) URL.revokeObjectURL(old.thumbUrl);
-
     const arr = [...this.collageImages];
     arr[index] = newImage;
     this.collageImages = arr;
@@ -202,9 +202,6 @@ export class AppState {
   }
 
   clearCollageImages() {
-    for (const img of this.collageImages) {
-      if (img.thumbUrl) URL.revokeObjectURL(img.thumbUrl);
-    }
     this.collageImages = [];
     this.collageRotations = [];
     this.collageHoveredIndex = null;
@@ -224,6 +221,7 @@ export class AppState {
   }
 
   shuffleCollageImages() {
+    if (this.collageImages.length < 2) return;
     const arr = [...this.collageImages];
     const rot = [...this.collageRotations];
     for (let i = arr.length - 1; i > 0; i--) {
@@ -264,16 +262,22 @@ export class AppState {
       URL.revokeObjectURL(this.collage.background.image.thumbUrl);
     }
     const img: SelectedImage = { file, path, thumbUrl: URL.createObjectURL(file) };
-    this.updateBackground('image', img);
-    this.updateBackground('type', 'image');
+    this.collage = {
+      ...this.collage,
+      background: { ...this.collage.background, image: img, type: 'image' }
+    };
+    this.pushHistory();
   }
 
   clearBackgroundImage() {
     if (this.collage.background.image?.thumbUrl) {
       URL.revokeObjectURL(this.collage.background.image.thumbUrl);
     }
-    this.updateBackground('image', null);
-    this.updateBackground('type', 'color');
+    this.collage = {
+      ...this.collage,
+      background: { ...this.collage.background, image: null, type: 'color' }
+    };
+    this.pushHistory();
   }
 
   applyStylePreset(id: string) {
@@ -337,7 +341,6 @@ export class AppState {
 }
 
 // ---------- Генераторы фигур ----------
-
 function circleLayout(n: number, scale: number): Cell[] {
   const R = 0.36;
   const baseD = Math.min(0.30, (2 * Math.PI * R) / n * 0.92);
