@@ -337,13 +337,139 @@ export class AppState {
 }
 
 // ---------- Генераторы фигур ----------
-function circleLayout(n: number, scale: number): Cell[] { /* Оставь свой старый код */ return []; }
-function ellipseLayout(n: number, scale: number): Cell[] { /* Оставь свой старый код */ return []; }
-function pyramidLayout(n: number, scale: number): Cell[] { /* Оставь свой старый код */ return []; }
-function hexagonLayout(scale: number): Cell[] { /* Оставь свой старый код */ return []; }
-function honeycombLayout(scale: number): Cell[] { /* Оставь свой старый код */ return []; }
-function diamondsLayout(n: number, scale: number): Cell[] { /* Оставь свой старый код */ return []; }
-function starsLayout(n: number, scale: number): Cell[] { /* Оставь свой старый код */ return []; }
+
+function circleLayout(n: number, scale: number): Cell[] {
+  const R = 0.36;
+  const baseD = Math.min(0.30, (2 * Math.PI * R) / n * 0.92);
+  const d = baseD * scale;
+  const cells: Cell[] = [];
+  for (let i = 0; i < n; i++) {
+    const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
+    const cx = 0.5 + R * Math.cos(angle);
+    const cy = 0.5 + R * Math.sin(angle);
+    cells.push({ x: cx - d / 2, y: cy - d / 2, w: d, h: d, shape: 'circle' });
+  }
+  return cells;
+}
+
+function ellipseLayout(n: number, scale: number): Cell[] {
+  const a = 0.40;
+  const b = 0.28;
+  const baseD = 0.26;
+  const h = ((a - b) * (a - b)) / ((a + b) * (a + b));
+  const perimeter = Math.PI * (a + b) * (1 + (3 * h) / (10 + Math.sqrt(4 - 3 * h)));
+  const baseCell = Math.min(baseD, (perimeter / n) * 0.9);
+  const d = baseCell * scale;
+  const cells: Cell[] = [];
+  for (let i = 0; i < n; i++) {
+    const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
+    const cx = 0.5 + a * Math.cos(angle);
+    const cy = 0.5 + b * Math.sin(angle);
+    cells.push({ x: cx - d / 2, y: cy - d / 2, w: d, h: d, shape: 'ellipse' });
+  }
+  return cells;
+}
+
+function pyramidLayout(n: number, scale: number): Cell[] {
+  const levels: number[] = [];
+  let remaining = n;
+  let level = 1;
+  while (remaining > 0 && level <= 6) {
+    const take = Math.min(level, remaining);
+    levels.push(take);
+    remaining -= take;
+    level++;
+  }
+  const maxLevel = Math.max(...levels);
+  const cellBase = (1 / maxLevel) * 0.92;
+  const d = cellBase * scale;
+  const cells: Cell[] = [];
+  const totalLevels = levels.length;
+  const totalH = totalLevels * d;
+  const startY = 0.5 - totalH / 2;
+  for (let li = 0; li < levels.length; li++) {
+    const count = levels[li];
+    const rowW = count * d;
+    const startX = 0.5 - rowW / 2;
+    const y = startY + li * d;
+    for (let i = 0; i < count; i++) {
+      const x = startX + i * d;
+      cells.push({ x, y, w: d, h: d, shape: 'circle' });
+    }
+  }
+  return cells;
+}
+
+function hexagonLayout(scale: number): Cell[] {
+  const cells: Cell[] = [];
+  const R = 0.30;
+  const baseD = 0.28;
+  const d = baseD * scale;
+  cells.push({ x: 0.5 - d / 2, y: 0.5 - d / 2, w: d, h: d, shape: 'hexagon' });
+  for (let i = 0; i < 6; i++) {
+    const angle = (i / 6) * Math.PI * 2 - Math.PI / 2;
+    const cx = 0.5 + R * Math.cos(angle);
+    const cy = 0.5 + R * Math.sin(angle);
+    cells.push({ x: cx - d / 2, y: cy - d / 2, w: d, h: d, shape: 'hexagon' });
+  }
+  return cells;
+}
+
+function honeycombLayout(scale: number): Cell[] {
+  const baseD = 0.22;
+  const d = baseD * scale;
+  const stepX = d * 0.87;
+  const stepY = d * 0.75;
+  const rowCounts = [3, 4, 5, 4, 3];
+  const totalRows = rowCounts.length;
+  const cells: Cell[] = [];
+  const centerY = 0.5;
+  for (let row = 0; row < totalRows; row++) {
+    const rowCount = rowCounts[row];
+    const rowW = rowCount * stepX;
+    const startX = 0.5 - rowW / 2 + stepX / 2;
+    for (let col = 0; col < rowCount; col++) {
+      const cx = startX + col * stepX;
+      const cy = centerY + (row - (totalRows - 1) / 2) * stepY;
+      cells.push({ x: cx - d / 2, y: cy - d / 2, w: d, h: d, shape: 'hexagon' });
+    }
+  }
+  return cells;
+}
+
+function diamondsLayout(n: number, scale: number): Cell[] {
+  const size = Math.max(1, Math.floor(Math.sqrt(n)));
+  const step = 1 / size;
+  const d = step * 1.05 * scale;
+  const startX = 0.5 - (size * step) / 2 + step / 2;
+  const startY = 0.5 - (size * step) / 2 + step / 2;
+  const cells: Cell[] = [];
+  for (let row = 0; row < size; row++) {
+    for (let col = 0; col < size; col++) {
+      const cx = startX + col * step;
+      const cy = startY + row * step;
+      cells.push({ x: cx - d / 2, y: cy - d / 2, w: d, h: d, shape: 'diamond' });
+    }
+  }
+  return cells;
+}
+
+function starsLayout(n: number, scale: number): Cell[] {
+  const size = Math.max(1, Math.floor(Math.sqrt(n)));
+  const step = 1 / size;
+  const d = step * 1.05 * scale;
+  const startX = 0.5 - (size * step) / 2 + step / 2;
+  const startY = 0.5 - (size * step) / 2 + step / 2;
+  const cells: Cell[] = [];
+  for (let row = 0; row < size; row++) {
+    for (let col = 0; col < size; col++) {
+      const cx = startX + col * step;
+      const cy = startY + row * step;
+      cells.push({ x: cx - d / 2, y: cy - d / 2, w: d, h: d, shape: 'star' });
+    }
+  }
+  return cells;
+}
 
 const KEY = Symbol('app-state');
 export function setAppState() { return setContext(KEY, new AppState()); }
