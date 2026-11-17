@@ -74,7 +74,7 @@
   <!-- ─── ПРЕСЕТЫ СТИЛЕЙ ─── -->
   <div class="field">
     <div class="field-header">
-      <label>Стили</label>
+      <label>{tr('style.stylePresets')}</label>
     </div>
     <div class="preset-grid">
       {#each STYLE_PRESETS as preset}
@@ -124,7 +124,7 @@
   <div class="field">
     <div class="field-header">
       <Ratio size={14} />
-      <label>Пропорции</label>
+      <label>{tr('style.aspectRatio')}</label>
     </div>
     <div class="segmented">
       {#each aspectRatios as ratio}
@@ -226,7 +226,7 @@
 
       <div class="field" style="margin-top: 12px;">
         <div class="field-header">
-          <label>Масштаб</label>
+          <label>{tr('style.patternScale')}</label>
           <span class="value">{Math.round(app.collage.background.patternScale * 100)}%</span>
         </div>
         <input type="range" min="0.5" max="3" step="0.1" bind:value={app.collage.background.patternScale} />

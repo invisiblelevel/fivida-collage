@@ -25,9 +25,10 @@ export default {
     hintPick: 'Выбери фигуру, чтобы применить её к коллажу.',
   },
   style: {
-    title: 'Стиль', columns: 'Колонки', rows: 'Строки', gap: 'Отступ', backgroundColor: 'Цвет фона',
+    title: 'Стиль', stylePresets: 'Стили', columns: 'Колонки', rows: 'Строки', gap: 'Отступ',
+    aspectRatio: 'Пропорции', backgroundColor: 'Цвет фона',
     background: 'Фон', bgColor: 'Цвет', bgPattern: 'Узор', bgImage: 'Фото', bgTransparent: 'Прозрачный',
-    uploadBg: 'Загрузить фон', fitCover: 'Заполнить', fitContain: 'Вписать', fitStretch: 'Растянуть',
+    patternScale: 'Масштаб', uploadBg: 'Загрузить фон', fitCover: 'Заполнить', fitContain: 'Вписать', fitStretch: 'Растянуть',
     imageBackdrop: 'Цвет подложки', patternSoon: 'Сетка паттернов появится чуть позже!', border: 'Рамка',
     borderColor: 'Цвет рамки', borderRadius: 'Скругление углов', shadow: 'Тени', outputSize: 'Размер вывода',
     customColor: 'Свой цвет',

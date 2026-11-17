@@ -25,9 +25,10 @@ export default {
     hintPick: 'Pick a figure to apply it to the collage.',
   },
   style: {
-    title: 'Style', columns: 'Columns', rows: 'Rows', gap: 'Gap', backgroundColor: 'Background',
+    title: 'Style', stylePresets: 'Styles', columns: 'Columns', rows: 'Rows', gap: 'Gap',
+    aspectRatio: 'Aspect ratio', backgroundColor: 'Background',
     background: 'Background', bgColor: 'Color', bgPattern: 'Pattern', bgImage: 'Image', bgTransparent: 'Transparent',
-    uploadBg: 'Upload background', fitCover: 'Cover', fitContain: 'Contain', fitStretch: 'Stretch',
+    patternScale: 'Scale', uploadBg: 'Upload background', fitCover: 'Cover', fitContain: 'Contain', fitStretch: 'Stretch',
     imageBackdrop: 'Backdrop color', patternSoon: 'Pattern grid will be added in the next update!', border: 'Border',
     borderColor: 'Border color', borderRadius: 'Corner radius', shadow: 'Shadow', outputSize: 'Output size',
     customColor: 'Custom color',

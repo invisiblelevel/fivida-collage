@@ -25,9 +25,10 @@ export default {
     hintPick: '选择图形应用到拼贴。',
   },
   style: {
-    title: '样式', columns: '列数', rows: '行数', gap: '间距', backgroundColor: '背景颜色',
+    title: '样式', stylePresets: '预设样式', columns: '列数', rows: '行数', gap: '间距',
+    aspectRatio: '长宽比', backgroundColor: '背景颜色',
     background: '背景', bgColor: '颜色', bgPattern: '图案', bgImage: '图片', bgTransparent: '透明',
-    uploadBg: '上传背景', fitCover: '填充', fitContain: '适应', fitStretch: '拉伸',
+    patternScale: '缩放', uploadBg: '上传背景', fitCover: '填充', fitContain: '适应', fitStretch: '拉伸',
     imageBackdrop: '底色', patternSoon: '图案网格将在后续更新中添加！', border: '边框',
     borderColor: '边框颜色', borderRadius: '圆角', shadow: '阴影', outputSize: '输出尺寸',
     customColor: '自定义颜色',
