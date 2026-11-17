@@ -3,6 +3,7 @@
   import { X, Heart } from '@lucide/svelte';
   import { getAppState } from '$lib/state/appState.svelte.js';
   import { t } from '$lib/i18n/index.js';
+  import { APP_VERSION } from '$lib/version.js';
 
   const app = getAppState();
   const tr = $derived((key: string, params?: Record<string, string | number>) => t(app.locale, key, params));
@@ -34,7 +35,7 @@
 
     <div class="modal-body">
       <h1>{tr('app.name')}</h1>
-      <p class="version">{tr('about.version', { v: '1.0.0' })}</p>
+      <p class="version">{tr('about.version', { v: APP_VERSION })}</p>
 
       <p class="description">{tr('about.description')}</p>
 

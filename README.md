@@ -2,7 +2,7 @@
 
 **Build photo collages in one click** · **Сборка фотоколлажей в один клик** · **一键生成照片拼贴**
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](../../releases)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](../../releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6.svg)](#install)
 [![Tauri](https://img.shields.io/badge/tauri-2.12-24C8DB.svg)](https://tauri.app/)
@@ -17,7 +17,7 @@
 
 Fivida Collage is a lightweight desktop app for building photo collages. Works fully offline — no clouds, subscriptions or data collection.
 
-Pick photos → choose a layout or figure → fine-tune borders and shadows → export. Everything happens on your machine, nothing is sent anywhere.
+Pick photos → choose a layout or figure → fine-tune borders, shadows, and backgrounds → export. Everything happens on your machine, nothing is sent anywhere.
 
 ### Features
 
@@ -26,7 +26,12 @@ Pick photos → choose a layout or figure → fine-tune borders and shadows → 
 - **7 figures** — Circle, Ellipse, Pyramid, Hexagon, Honeycomb, Diamonds, Stars
 - **Free rotation** — grab the handle and turn each photo to any angle with auto-scaling
 - **Drag-n-drop** — swap photos between cells directly on the canvas
+- **Drag-n-drop files** — drop images from your file explorer directly into the window
+- **Backgrounds** — solid colors, 14 seamless SVG patterns, custom images, or transparent
+- **Style presets** — 6 one-click styles (Clean, Polaroid, Film, Shadow box, Bold, Minimal)
 - **Borders and shadows** — thickness, color, corner radius, shadow intensity
+- **Aspect ratios** — 1:1, 4:5, 16:9, 9:16 for social media
+- **Undo/Redo** — full history of your edits with `Ctrl+Z` / `Ctrl+Y`
 - **Custom HSV color picker** with HEX input
 - **Export** — PNG / JPEG / WebP
 - **Three languages** — English, Russian, Simplified Chinese, with system auto-detection
@@ -47,7 +52,7 @@ Tauri 2.12 · SvelteKit + Svelte 5 (runes) · TypeScript · Rust · Vite 7 · Ca
 
 ### Install
 
-Download **Fivida Collage Setup v1.0.0.exe** from [Releases](../../releases), run, install (choose English / Russian / Chinese). No dependencies needed — everything is bundled, including WebView2 runtime.
+Download **Fivida Collage Setup v1.1.0.exe** from [Releases](../../releases), run, install (choose English / Russian / Chinese). No dependencies needed — everything is bundled, including WebView2 runtime.
 
 Windows 10 version 1903 or newer / Windows 11 (64-bit).
 
@@ -61,7 +66,7 @@ Requirements:
 
 Steps:
 
-1. `git clone https://github.com/<YOUR_USERNAME>/fivida-collage.git`
+1. `git clone https://github.com/invisiblelevel/fivida-collage.git`
 2. `cd fivida-collage`
 3. `npm install`
 4. `npm run tauri dev` — dev mode
@@ -83,7 +88,7 @@ INV.LVL · [@invisiblelevel](https://github.com/invisiblelevel)
 
 Fivida Collage — лёгкое десктопное приложение для сборки коллажей из фотографий. Работает полностью оффлайн — без облаков, подписок и сбора данных.
 
-Выбрал фото → выбрал раскладку или фигуру → подкрутил рамки и тени → экспортировал. Всё происходит на твоей машине, ничего никуда не отправляется.
+Выбрал фото → выбрал раскладку или фигуру → подкрутил рамки, тени и фон → экспортировал. Всё происходит на твоей машине, ничего никуда не отправляется.
 
 ### Что умеет
 
@@ -92,7 +97,12 @@ Fivida Collage — лёгкое десктопное приложение для
 - **7 фигур** — Круг, Овал, Пирамида, Шестиугольник, Соты, Ромбы, Звёзды
 - **Свободный поворот** — схвати значок и крути фото на любой угол, с автомасштабом
 - **Drag-n-drop** — перетаскивай фото между ячейками прямо на канвасе
+- **Drag-n-drop файлов** — перетаскивай картинки из проводника прямо в окно программы
+- **Фоны** — сплошные цвета, 14 бесшовных SVG-паттернов, свои картинки или прозрачность
+- **Пресеты стилей** — 6 готовых стилей в один клик (Чистый, Полароид, Плёнка, Тень-бокс, Дерзкий, Минимал)
 - **Рамки и тени** — толщина, цвет, скругление, интенсивность тени
+- **Пропорции** — 1:1, 4:5, 16:9, 9:16 для соцсетей
+- **Undo/Redo** — полная история изменений с `Ctrl+Z` / `Ctrl+Y`
 - **Кастомный HSV-пикер** с HEX-инпутом
 - **Экспорт** — PNG / JPEG / WebP
 - **Три языка** — английский, русский, китайский (упрощённый), с авто-определением системного
@@ -113,7 +123,7 @@ Tauri 2.12 · SvelteKit + Svelte 5 (runes) · TypeScript · Rust · Vite 7 · Ca
 
 ### Установка
 
-Скачай **Fivida Collage Setup v1.0.0.exe** из раздела [Releases](../../releases), запусти, установи (выбери язык: русский / английский / китайский). Зависимости не нужны — всё вшито в инсталлер, включая WebView2.
+Скачай **Fivida Collage Setup v1.1.0.exe** из раздела [Releases](../../releases), запусти, установи (выбери язык: русский / английский / китайский). Зависимости не нужны — всё вшито в инсталлер, включая WebView2.
 
 Поддерживается Windows 10 (версия 1903+) / Windows 11 (64-bit).
 
@@ -127,7 +137,7 @@ Tauri 2.12 · SvelteKit + Svelte 5 (runes) · TypeScript · Rust · Vite 7 · Ca
 
 Шаги:
 
-1. `git clone https://github.com/<ТВОЙ_ЮЗЕРНЕЙМ>/fivida-collage.git`
+1. `git clone https://github.com/invisiblelevel/fivida-collage.git`
 2. `cd fivida-collage`
 3. `npm install`
 4. `npm run tauri dev` — dev-режим
@@ -149,7 +159,7 @@ INV.LVL · [@invisiblelevel](https://github.com/invisiblelevel)
 
 Fivida Collage 是一款轻量的桌面照片拼贴工具。完全离线运行——无需云端、订阅或数据收集。
 
-选照片 → 选布局或图形 → 调整边框与阴影 → 导出。所有处理都在本机完成，不会上传到任何地方。
+选照片 → 选布局或图形 → 调整边框、阴影和背景 → 导出。所有处理都在本机完成，不会上传到任何地方。
 
 ### 功能
 
@@ -158,7 +168,12 @@ Fivida Collage 是一款轻量的桌面照片拼贴工具。完全离线运行�
 - **7 种图形** — 圆形、椭圆、金字塔、六边形、蜂窝、菱形、星形
 - **自由旋转** — 抓住手柄，任意角度旋转每张照片，自动缩放
 - **拖放** — 直接在画布上交换单元格中的照片
+- **拖放文件** — 将图片从文件资源管理器直接拖入窗口
+- **背景** — 纯色、14 种无缝 SVG 图案、自定义图片或透明
+- **样式预设** — 6 种一键样式（干净、拍立得、胶片、阴影盒、大胆、极简）
 - **边框与阴影** — 厚度、颜色、圆角、阴影强度
+- **长宽比** — 1:1、4:5、16:9、9:16（适用于社交媒体）
+- **撤销/重做** — 使用 `Ctrl+Z` / `Ctrl+Y` 的完整编辑历史记录
 - **自定义 HSV 取色器**，支持 HEX 输入
 - **导出** — PNG / JPEG / WebP
 - **三种语言** — 英语、俄语、简体中文，支持系统自动检测
@@ -179,7 +194,7 @@ Tauri 2.12 · SvelteKit + Svelte 5 (runes) · TypeScript · Rust · Vite 7 · Ca
 
 ### 安装
 
-从 [Releases](../../releases) 下载 **Fivida Collage Setup v1.0.0.exe**，运行并安装（可选英语 / 俄语 / 中文）。无需任何依赖 — 全部已打包，含 WebView2 运行时。
+从 [Releases](../../releases) 下载 **Fivida Collage Setup v1.1.0.exe**，运行并安装（可选英语 / 俄语 / 中文）。无需任何依赖 — 全部已打包，含 WebView2 运行时。
 
 支持 Windows 10（1903 或更新版本）/ Windows 11（64 位）。
 
@@ -193,7 +208,7 @@ Tauri 2.12 · SvelteKit + Svelte 5 (runes) · TypeScript · Rust · Vite 7 · Ca
 
 步骤：
 
-1. `git clone https://github.com/<YOUR_USERNAME>/fivida-collage.git`
+1. `git clone https://github.com/invisiblelevel/fivida-collage.git`
 2. `cd fivida-collage`
 3. `npm install`
 4. `npm run tauri dev` — 开发模式

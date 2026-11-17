@@ -1,10 +1,13 @@
 <script lang="ts">
   import { open, save } from '@tauri-apps/plugin-dialog';
   import { readFile, writeFile } from '@tauri-apps/plugin-fs';
-  import { Plus, Trash2, Download, Shuffle, ImagePlus } from '@lucide/svelte';
+
   import { getAppState } from '$lib/state/appState.svelte.js';
   import { t } from '$lib/i18n/index.js';
-  import type { SelectedImage, Cell } from '$lib/state/appState.svelte.js';
+  import type { SelectedImage, Cell, ImageFit } from '$lib/state/appState.svelte.js';
+  import { onMount } from 'svelte';
+  import { getCurrentWebview } from '@tauri-apps/api/webview';
+  import { Plus, Trash2, Download, Shuffle, ImagePlus, Undo2, Redo2 } from '@lucide/svelte';
 
   const app = getAppState();
   const tr = $derived((key: string, params?: Record<string, string | number>, n?: number) => t(app.locale, key, params, n));
@@ -19,11 +22,20 @@
   let imagesVersion = $state(0);
   let loadedForKey = '';
 
+  let loadedBgImage: HTMLImageElement | null = null;
+  let loadedBgForKey = '';
+  
+  // --- ДОБАВИТЬ ВОТ ЭТО ---
+  let cachedPatternCanvas: HTMLCanvasElement | null = null;
+  let cachedPatternKey = '';
+  // ------------------------
+  
   type CellRect = { x: number; y: number; w: number; h: number; shape?: 'rect' | 'circle' | 'ellipse' | 'hexagon' | 'diamond' | 'star' };
   let layout: CellRect[] = $state([]);
 
   // Drag-n-drop
   let dragFrom = $state<number | null>(null);
+  let isDraggingFiles = $state(false);
   let dragTo = $state<number | null>(null);
   let canGrab = $state(false);
 
@@ -67,6 +79,28 @@
     return URL.createObjectURL(file);
   }
 
+  async function loadFromPaths(paths: string[]) {
+    try {
+      const images: SelectedImage[] = [];
+      for (const path of paths) {
+        const data = await readFile(path);
+        const name = path.split(/[\\/]/).pop() ?? 'image';
+        const file = new File([data], name);
+        images.push({
+          file,
+          path,
+          thumbUrl: makeThumbUrl(file),
+        });
+      }
+      app.addCollageImages(images);
+      error = '';
+      await loadAllImages();
+      scheduleRender();
+    } catch (e) {
+      error = String(e);
+    }
+  }
+
   async function pickFiles() {
     try {
       const selected = await open({
@@ -79,23 +113,7 @@
 
       if (!selected) return;
       const paths = Array.isArray(selected) ? selected : [selected];
-
-      const images: SelectedImage[] = [];
-      for (const path of paths) {
-        const data = await readFile(path);
-        const name = path.split(/[\\/]/).pop() ?? 'image';
-        const file = new File([data], name);
-        images.push({
-          file,
-          path,
-          thumbUrl: makeThumbUrl(file),
-        });
-      }
-
-      app.addCollageImages(images);
-      error = '';
-      await loadAllImages();
-      scheduleRender();
+      await loadFromPaths(paths);
     } catch (e) {
       error = String(e);
     }
@@ -166,12 +184,49 @@
 
     loadingKey = key;
     try {
-      const loaded = await Promise.all(files.map(loadImageFromFile));
+      const results = await Promise.allSettled(files.map(loadImageFromFile));
+      const loaded: HTMLImageElement[] = [];
+      let failedCount = 0;
+      
+      for (const r of results) {
+        if (r.status === 'fulfilled') {
+          loaded.push(r.value);
+        } else {
+          failedCount++;
+          loaded.push(null as unknown as HTMLImageElement); // дырка
+        }
+      }
+      
+      if (failedCount > 0) {
+        error = tr('errors.loadFailed', { n: failedCount });
+      }
+      
       loadedImages = loaded;
       loadedForKey = key;
       imagesVersion++;
     } finally {
       loadingKey = '';
+    }
+  }
+
+  async function loadBackgroundImage() {
+    if (app.collage.background.type !== 'image' || !app.collage.background.image) {
+      loadedBgImage = null;
+      loadedBgForKey = '';
+      return;
+    }
+    
+    const imgObj = app.collage.background.image;
+    const key = imgObj.file.name + '::' + imgObj.file.size;
+    if (key === loadedBgForKey && loadedBgImage) return;
+
+    try {
+      loadedBgImage = await loadImageFromFile(imgObj.file);
+      loadedBgForKey = key;
+    } catch (e) {
+      loadedBgImage = null;
+      loadedBgForKey = '';
+      error = tr('errors.bgLoadFailed');
     }
   }
 
@@ -230,6 +285,106 @@
     ctx.restore();
   }
 
+    function drawBackground(ctx: CanvasRenderingContext2D, W: number, H: number) {
+    const bg = app.collage.background;
+
+    if (bg.type === 'transparent') {
+      ctx.clearRect(0, 0, W, H);
+      return;
+    }
+
+    if (bg.type === 'color') {
+      ctx.fillStyle = bg.color;
+      ctx.fillRect(0, 0, W, H);
+      return;
+    }
+
+    if (bg.type === 'pattern') {
+      // 1. Сначала заливаем базовым цветом
+      ctx.fillStyle = bg.color;
+      ctx.fillRect(0, 0, W, H);
+
+      // 2. Проверяем кэш
+      const key = `${bg.pattern}::${bg.patternColor}::${bg.patternScale}`;
+      
+      if (key !== cachedPatternKey) {
+        // Пересоздаём паттерн, если изменились настройки
+        import('$lib/patterns/patterns.js').then(({ getPatternSVG }) => {
+          const svgString = getPatternSVG(bg.pattern, bg.patternColor);
+          const blob = new Blob([svgString], { type: 'image/svg+xml' });
+          const url = URL.createObjectURL(blob);
+          const img = new Image();
+          
+          img.onload = () => {
+            const baseSize = 100;
+            const scaledSize = Math.max(10, Math.floor(baseSize * bg.patternScale));
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = scaledSize;
+            canvas.height = scaledSize;
+            const cctx = canvas.getContext('2d')!;
+            cctx.drawImage(img, 0, 0, scaledSize, scaledSize);
+            
+            cachedPatternCanvas = canvas;
+            cachedPatternKey = key;
+            URL.revokeObjectURL(url);
+            
+            // Перерисовываем коллаж с новым паттерном
+            scheduleRender();
+          };
+          img.src = url;
+        });
+        
+        return;
+      }
+
+      // 3. Если кэш есть — применяем его
+      if (cachedPatternCanvas) {
+        const pattern = ctx.createPattern(cachedPatternCanvas, 'repeat');
+        if (pattern) {
+          ctx.fillStyle = pattern;
+          ctx.fillRect(0, 0, W, H);
+        }
+      }
+      return;
+    }
+
+    if (bg.type === 'image') {
+      if (!loadedBgImage) {
+        ctx.fillStyle = bg.imageBackdrop;
+        ctx.fillRect(0, 0, W, H);
+        return;
+      }
+
+      if (bg.imageFit === 'cover') {
+        drawCoverRaw(ctx, loadedBgImage, 0, 0, W, H);
+      } else if (bg.imageFit === 'stretch') {
+        ctx.drawImage(loadedBgImage, 0, 0, W, H);
+      } else if (bg.imageFit === 'contain') {
+        ctx.fillStyle = bg.imageBackdrop;
+        ctx.fillRect(0, 0, W, H);
+
+        const imgAspect = loadedBgImage.width / loadedBgImage.height;
+        const canvasAspect = W / H;
+        
+        let dw = W;
+        let dh = H;
+        let dx = 0;
+        let dy = 0;
+
+        if (imgAspect > canvasAspect) {
+          dh = W / imgAspect;
+          dy = (H - dh) / 2;
+        } else {
+          dw = H * imgAspect;
+          dx = (W - dw) / 2;
+        }
+
+        ctx.drawImage(loadedBgImage, dx, dy, dw, dh);
+      }
+    }
+  }
+
   async function renderCollage(token: number) {
     if (!canvasEl || app.collageImages.length === 0) return;
 
@@ -237,20 +392,23 @@
     error = '';
 
     try {
+      await loadBackgroundImage();
+      if (token !== renderToken) return;
+
       const W = app.collage.outputWidth;
       const cells = currentCells();
-      const H = W;
+      const ratioMap: Record<string, number> = { '1:1': 1, '4:5': 4/5, '16:9': 16/9, '9:16': 9/16 };
+      const aspect = ratioMap[app.collage.aspectRatio] || 1;
+      const H = Math.round(W / aspect);
 
       const gapPx = app.collage.gap;
-      const bg = app.collage.backgroundColor;
 
       canvasEl.width = W;
       canvasEl.height = H;
       const ctx = canvasEl.getContext('2d');
       if (!ctx) throw new Error(tr('errors.noContext'));
 
-      ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, W, H);
+      drawBackground(ctx, W, H);
 
       if (token !== renderToken) return;
 
@@ -556,16 +714,32 @@
         quality = 1.0;
       }
 
-      const blob = await new Promise<Blob | null>((resolve) => {
-        canvasEl!.toBlob((b) => resolve(b), mime, quality);
-      });
-
-      if (!blob) throw new Error(tr('errors.blob'));
-
-      const arrayBuffer = await blob.arrayBuffer();
-      const bytes = new Uint8Array(arrayBuffer);
-
-      await writeFile(path, bytes);
+      // Костыль для прозрачного фона при экспорте в JPEG
+      if (mime === 'image/jpeg' && app.collage.background.type === 'transparent') {
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvasEl.width;
+        tempCanvas.height = canvasEl.height;
+        const tCtx = tempCanvas.getContext('2d')!;
+        tCtx.fillStyle = '#ffffff';
+        tCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        tCtx.drawImage(canvasEl, 0, 0);
+        
+        const blob = await new Promise<Blob | null>((resolve) => {
+          tempCanvas.toBlob((b) => resolve(b), mime, quality);
+        });
+        if (!blob) throw new Error(tr('errors.blob'));
+        const arrayBuffer = await blob.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        await writeFile(path, bytes);
+      } else {
+        const blob = await new Promise<Blob | null>((resolve) => {
+          canvasEl!.toBlob((b) => resolve(b), mime, quality);
+        });
+        if (!blob) throw new Error(tr('errors.blob'));
+        const arrayBuffer = await blob.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        await writeFile(path, bytes);
+      }
     } catch (e) {
       error = String(e);
     } finally {
@@ -735,6 +909,7 @@
     rotatingIndex = null;
     const el = e.currentTarget as HTMLElement;
     if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
+    app.pushHistory();
   }
 
   function resetRotation(e: MouseEvent, i: number) {
@@ -749,7 +924,8 @@
     app.collage.columns;
     app.collage.rows;
     app.collage.gap;
-    app.collage.backgroundColor;
+	app.collage.aspectRatio;
+    app.collage.background; // Реагируем на любые изменения в объекте фона
     app.collage.outputWidth;
     app.collage.layout;
     app.collage.borderWidth;
@@ -761,9 +937,43 @@
     imagesVersion;
     scheduleRender();
   });
+  
+  onMount(() => {
+    let unlisten: (() => void) | null = null;
+    getCurrentWebview().onDragDropEvent((event) => {
+      if (event.payload.type === 'over') {
+        isDraggingFiles = true;
+      } else if (event.payload.type === 'drop') {
+        isDraggingFiles = false;
+        const paths = event.payload.paths;
+        if (paths && paths.length > 0) {
+          // Фильтруем только картинки
+          const imgPaths = paths.filter(p => /\.(png|jpe?g|webp)$/i.test(p));
+          if (imgPaths.length > 0) loadFromPaths(imgPaths);
+        }
+      } else if (event.payload.type === 'leave') {
+        isDraggingFiles = false;
+      }
+    }).then(unsub => {
+      unlisten = unsub;
+    });
+
+    return () => {
+      if (unlisten) unlisten();
+    };
+  });
 </script>
 
 <div class="collage-viewport">
+  {#if isDraggingFiles}
+    <div class="drag-overlay">
+      <div class="drag-overlay-inner">
+        <Plus size={48} />
+        <span>{tr('dragDrop.overlay')}</span>
+      </div>
+    </div>
+  {/if}
+
   {#if app.collageImages.length === 0}
     <div class="empty">
       {#if error}
@@ -774,7 +984,7 @@
         <span>{tr('toolbar.addPhoto')}</span>
       </button>
     </div>
-  {:else}
+    {:else}
     <div class="toolbar">
       <span class="photo-count">
         {tr('toolbar.photo', { n: app.collageImages.length }, app.collageImages.length)}
@@ -791,6 +1001,12 @@
       <button class="tool-btn primary" onclick={exportCollage} disabled={rendering || exporting}>
         <Download size={14} />
         {exporting ? tr('toolbar.saving') : tr('toolbar.save')}
+      </button>
+	  <button class="tool-btn" onclick={() => app.undo()} disabled={app.historyIndex <= 0} title="Undo">
+        <Undo2 size={14} />
+      </button>
+      <button class="tool-btn" onclick={() => app.redo()} disabled={app.historyIndex >= app.history.length - 1} title="Redo">
+        <Redo2 size={14} />
       </button>
       <button class="tool-btn" onclick={clearAll} disabled={rendering || exporting}>
         <Trash2 size={14} />
@@ -1030,25 +1246,15 @@
   }
 
   .cell-highlight.round { border-radius: 50%; }
-
   .cell-highlight.hex {
-    clip-path: polygon(
-      50% 0%, 93% 25%, 93% 75%,
-      50% 100%, 7% 75%, 7% 25%
-    );
+    clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
   }
-
   .cell-highlight.diamond {
     clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
   }
-
   .cell-highlight.star {
-    clip-path: polygon(
-      50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%,
-      50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%
-    );
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
   }
-
   .cell-highlight.dragging-from {
     border-color: var(--accent);
     background: rgba(124, 108, 255, 0.25);
@@ -1083,80 +1289,68 @@
   }
 
   .cell-action {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.75);
-    backdrop-filter: blur(6px);
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    pointer-events: auto;
+    width: 30px; height: 30px; border-radius: 50%;
+    background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(6px);
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; pointer-events: auto;
     transition: transform 0.12s, background 0.12s;
     border: 1px solid rgba(255, 255, 255, 0.25);
-    padding: 0;
-    z-index: 5;
+    padding: 0; z-index: 5;
   }
-  .cell-action:hover {
-    transform: scale(1.1);
-    background: var(--accent);
-  }
-  .cell-action.danger:hover {
-    background: #e5484d;
-  }
+  .cell-action:hover { transform: scale(1.1); background: var(--accent); }
+  .cell-action.danger:hover { background: #e5484d; }
 
   .rotate-handle {
-    position: absolute;
-    right: 8px;
-    bottom: 8px;
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.75);
-    backdrop-filter: blur(6px);
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: grab;
-    pointer-events: auto;
+    position: absolute; right: 8px; bottom: 8px;
+    width: 34px; height: 34px; border-radius: 50%;
+    background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(6px);
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    cursor: grab; pointer-events: auto;
     transition: transform 0.12s, background 0.12s;
     border: 1px solid rgba(255, 255, 255, 0.25);
-    z-index: 5;
-    padding: 0;
+    z-index: 5; padding: 0;
   }
-  .rotate-handle:hover {
-    transform: scale(1.1);
-    background: var(--accent);
-  }
-  .rotate-handle.active {
-    cursor: grabbing;
-    background: var(--accent);
-    transform: scale(1.15);
-  }
+  .rotate-handle:hover { transform: scale(1.1); background: var(--accent); }
+  .rotate-handle.active { cursor: grabbing; background: var(--accent); transform: scale(1.15); }
 
   .rotate-badge {
-    position: absolute;
-    right: 50px;
-    bottom: 14px;
-    padding: 3px 7px;
-    background: rgba(0, 0, 0, 0.8);
-    color: #fff;
-    font-size: 11px;
-    font-weight: 600;
-    border-radius: 4px;
-    font-variant-numeric: tabular-nums;
-    pointer-events: none;
-    z-index: 6;
+    position: absolute; right: 50px; bottom: 14px;
+    padding: 3px 7px; background: rgba(0, 0, 0, 0.8); color: #fff;
+    font-size: 11px; font-weight: 600; border-radius: 4px;
+    font-variant-numeric: tabular-nums; pointer-events: none; z-index: 6;
   }
 
   .error {
-    color: #ff6b6b;
-    font-size: 13px;
+    color: #ff6b6b; font-size: 13px;
+    position: absolute; top: 16px; left: 16px; z-index: 20;
+  }
+  
+    .drag-overlay {
     position: absolute;
-    top: 16px; left: 16px;
-    z-index: 20;
+    inset: 0;
+    z-index: 100;
+    background: rgba(15, 15, 19, 0.85);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none; /* Чтобы не мешало самому событию drop */
+    animation: fade-in 0.15s ease;
+  }
+
+  .drag-overlay-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    color: var(--accent);
+    font-size: 18px;
+    font-weight: 600;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 </style>

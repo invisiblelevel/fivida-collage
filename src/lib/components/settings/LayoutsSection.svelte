@@ -9,14 +9,6 @@
 
   interface LayoutPreset {
     id: string;
-    label: string;
-    cols: number;
-    rows: number;
-    cells: Cell[];
-  }
-
-    interface LayoutPreset {
-    id: string;
     labelKey: string;
     cols: number;
     rows: number;

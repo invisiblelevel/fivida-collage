@@ -5,7 +5,7 @@
   const app = getAppState();
   const tr = $derived((key: string) => t(app.locale, key));
 
-    const figures: {
+  const figures: {
     kind: 'circle' | 'ellipse' | 'pyramid' | 'hexagon' | 'honeycomb' | 'diamonds' | 'stars';
     labelKey: string;
   }[] = [
@@ -71,7 +71,6 @@
             <div class="dot" style="left: 20%; top: 68%;"></div>
             <div class="dot" style="left: 20%; top: 32%;"></div>
           {:else if fig.kind === 'honeycomb'}
-            <!-- плотная упаковка гексагонов: упрощённая миниатюра из 7 точек -->
             <div class="dot" style="left: 50%; top: 22%;"></div>
             <div class="dot" style="left: 20%; top: 38%;"></div>
             <div class="dot" style="left: 80%; top: 38%;"></div>
@@ -92,7 +91,7 @@
             <div class="dot" style="left: 50%; top: 50%;"></div>
           {/if}
         </div>
-        <span class="figure-label">{fig.label}</span>
+        <span class="figure-label">{tr(fig.labelKey)}</span>
       </button>
     {/each}
   </div>

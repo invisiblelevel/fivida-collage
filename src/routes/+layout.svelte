@@ -6,11 +6,27 @@
 
   const app = setAppState();
 
-  onMount(async () => {
-    // 1. Автоопределение языка (если пользователь ещё не выбирал)
-    app.initLocale();
+  function handleKeydown(e: KeyboardEvent) {
+    // Проверяем физическую клавишу (e.code), чтобы работало на любой раскладке
+    const isZ = e.code === 'KeyZ';
+    const isY = e.code === 'KeyY';
 
-    // 2. Восстановление зума из localStorage
+    // Undo (Ctrl+Z)
+    if ((e.ctrlKey || e.metaKey) && isZ && !e.shiftKey) {
+      e.preventDefault();
+      app.undo();
+    }
+    
+    // Redo (Ctrl+Y или Ctrl+Shift+Z)
+    if ((e.ctrlKey || e.metaKey) && (isY || (isZ && e.shiftKey))) {
+      e.preventDefault();
+      app.redo();
+    }
+  }
+
+  onMount(async () => {
+    app.initLocale();
+    
     const saved = localStorage.getItem('fivida.zoom');
     if (saved) {
       const lvl = parseFloat(saved);
@@ -23,6 +39,9 @@
         }
       }
     }
+
+    window.addEventListener('keydown', handleKeydown);
+    return () => window.removeEventListener('keydown', handleKeydown);
   });
 
   let { children } = $props();
